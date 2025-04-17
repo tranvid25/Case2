@@ -1174,40 +1174,46 @@ export default {
   },
   methods: {
     initializeWebSocket() {
-      // Sử dụng native WebSocket thay vì Socket.io
       this.connection = new WebSocket('ws://localhost:8081');
-      
+
       this.connection.onopen = () => {
-        console.log('WebSocket connection established');
+        console.log('✅ WebSocket connected');
       };
-      
+
       this.connection.onmessage = (event) => {
         try {
-          const data = JSON.parse(event.data);
-          this.totalEmployees = data.total_employees;
-          this.totalPayRate = data.total_pay_rate.toFixed(2);
-          this.mergedData = data.merged_data;
-        } catch (error) {
-          console.error('Lỗi khi xử lý dữ liệu:', error);
+          const message = JSON.parse(event.data);
+
+          // Trường hợp nhận dữ liệu broadcast từ server
+          if (message.total_employees !== undefined && message.merged_data !== undefined) {
+            this.totalEmployees = message.total_employees;
+            this.totalPayRate = Number(message.total_pay_rate).toFixed(2);
+            this.mergedData = message.merged_data;
+          }
+
+          // (Tùy mở rộng sau này nếu backend trả phản hồi riêng cho addEmployee)
+        } catch (err) {
+          console.error('❌ Lỗi xử lý WebSocket message:', err);
         }
       };
-      
+
       this.connection.onclose = () => {
-        console.log('WebSocket connection closed');
-        // Có thể thêm logic để kết nối lại sau một khoảng thời gian
-        setTimeout(() => this.initializeWebSocket(), 5000);
+        console.warn('⚠️ WebSocket disconnected, reconnecting...');
+        setTimeout(this.initializeWebSocket, 5000); // Thử lại sau 5s
       };
-      
+
       this.connection.onerror = (error) => {
-        console.error('WebSocket error:', error);
+        console.error('❌ WebSocket error:', error);
       };
     },
+
     toggleAddEmployeeForm() {
       this.showAddEmployeeForm = !this.showAddEmployeeForm;
       if (!this.showAddEmployeeForm) {
         this.resetForm();
       }
     },
+
     resetForm() {
       this.newEmployee = {
         fullName: '',
@@ -1221,24 +1227,25 @@ export default {
         vacationDays: ''
       };
     },
+
     addEmployee() {
-      // Gửi dữ liệu nhân viên mới qua WebSocket
       if (this.connection && this.connection.readyState === WebSocket.OPEN) {
+        // Chuẩn hóa lại payload
         this.connection.send(JSON.stringify({
           type: 'addEmployee',
           data: this.newEmployee
         }));
-        
-        // Ẩn form và reset
+
         this.toggleAddEmployeeForm();
-        alert('Thêm nhân viên thành công!');
+        alert('🟢 Nhân viên đã được gửi đến server!');
       } else {
-        alert('Kết nối WebSocket không khả dụng. Vui lòng thử lại sau.');
+        alert('🔴 Kết nối WebSocket chưa sẵn sàng. Vui lòng thử lại.');
       }
     }
   }
 };
 </script>
+
 
 <style></style>
 

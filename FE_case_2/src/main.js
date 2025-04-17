@@ -1,5 +1,4 @@
 import { createApp } from 'vue'
-import socket from './socket'
 import App from './App.vue'
 import router from './router'
 import Default from './layout/wrapper/index.vue'
